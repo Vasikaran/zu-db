@@ -1,0 +1,22 @@
+{
+  "name": "zu-db",
+  "version": "1.0.0",
+  "description": "mini db for node js",
+  "main": "./src/index.js",
+  "scripts": {
+    "build": "fz-react-cli build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vasikaran/zu-db.git"
+  },
+  "author": "Vasikaran S <vasikaran.25@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Vasikaran/zu-db/issues"
+  },
+  "homepage": "https://github.com/Vasikaran/zu-db#readme",
+  "devDependencies": {
+    "fz-react-cli": "0.0.3-beta.41"
+  }
+}
