@@ -9,86 +9,127 @@ export class ZuDatabase{
 		this.createDatabase = this.createDatabase.bind(this);
 		this.createTable = this.createTable.bind(this);
 		this.createColumn = this.createColumn.bind(this);
-		this.readAndWrite = this.readAndWrite.bind(this);
 		this.insert = this.insert.bind(this);
-		this.read = this.read.bind(this);
-	}
-
-	read(){
-		let instream = fs.createReadStream(this.dbPath);
-		let outstream = new stream;
-		let rl = readline.createInterface(instream, outstream);
-		let db;
-		rl.on('line', function(line) {
-			db = line;
-		});
-		rl.on('close', function() {
-			return db;
-		});
-	}
-
-	readAndWrite(logicFun, callback, message){
-		let instream = fs.createReadStream(this.dbPath);
-		let outstream = new stream;
-		let rl = readline.createInterface(instream, outstream);
-		let dbPath = this.dbPath;
-		let db;
-		rl.on('line', function(line) {
-			db = line;
-		});
-		rl.on('close', function() {
-			db = logicFun(db);
-			let wstream = fs.createWriteStream(dbPath);
-			wstream.write(JSON.stringify(db));
-			wstream.end(function(err){
-				if (!err){
-					callback(null, message);
-				}
-			});
-		});
+		this.remove = this.remove.bind(this);
+		this.getValues = this.getValues.bind(this);
 	}
 
 	createConnection(dbName, callback){
 		this.dbName = dbName;
-		this.dbPath = path.resolve(__dirname, '../doc/db/' + dbName + '.txt');
+		this.dbPath = path.resolve(__dirname, '../docs/db/' + dbName);
 		this.createDatabase();
 		return callback();
 	}
 
 	createDatabase(){
-		let dbObj = {name: this.dbName};
-		fs.writeFileSync(this.dbPath, JSON.stringify(dbObj));
-		return 'Database created successfully.';
+		if (!fs.existsSync(this.dbPath)){
+			let dbObj = {
+				name: this.dbName,
+				tableNames: []
+			};
+		    fs.mkdirSync(this.dbPath);
+			let dbPath = path.resolve(this.dbPath + '/' +this.dbName + '.txt');
+			fs.writeFileSync(dbPath, JSON.stringify(dbObj));
+			return 'Database created successfully.';
+		}
 	}
 
-	createTable(tbName, desc, callback){
-		let db = fs.readFileSync(this.dbPath).toString();
+	createTable(tbName, desc){
+		let dbPath = path.resolve(this.dbPath + '/' + this.dbName + '.txt');
+		let db = fs.readFileSync(dbPath).toString();
 		db = JSON.parse(db);
-		db[tbName] = {
+		db['tableNames'].push({
+			name: tbName
+		});
+		fs.writeFileSync(dbPath, JSON.stringify(db));
+		let table = {
+			__name: tbName,
 			__desc: desc
 		}
-		fs.writeFileSync(this.dbPath, JSON.stringify(db));
+		let filePath = path.resolve(this.dbPath + '/' + tbName + '.txt');
+		let tablePath = fs.writeFileSync(filePath , JSON.stringify(table));
 		return 'Table created.';
 	}
 
-	createColumn(columnName, tbName, callback){
-		let db = fs.readFileSync(this.dbPath).toString();
-		db = JSON.parse(db);
-		if (db[tbName]){
+	createColumn(columnName, tbName, isUnique){
+		let tbPath = path.resolve(this.dbPath + '/' + tbName + '.txt');
+		let table = fs.readFileSync(tbPath).toString();
+		table = JSON.parse(table);
+		if (!table[columnName]){
 			let data = [];
-			db[tbName][columnName] = data;
+			table[columnName] = data;
+			table['isUnique'] = isUnique;
+			fs.writeFileSync(tbPath, JSON.stringify(table));
+			return 'Column created.';
+		}else{
+			return 'Column already exist.'
 		}
-		fs.writeFileSync(this.dbPath, JSON.stringify(db));
-		return 'Column created.';
 	}
 
-	insert(tbName, columnName, value, callback){
-		let db = fs.readFileSync(this.dbPath).toString();
-		db = JSON.parse(db);
-		if(db[tbName][columnName]){
-			db[tbName][columnName].push(value);
+	insert(tbName, columnName, value){
+		let tbPath = path.resolve(this.dbPath + '/' + tbName + '.txt');
+		let table = fs.readFileSync(tbPath).toString();
+		table = JSON.parse(table);
+		let column = table[columnName];
+		if(column){
+			if (table['isUnique']){
+				value = JSON.stringify(value);
+				if (column.indexOf(value) === -1){
+					column.push(JSON.stringify(value));
+					fs.writeFileSync(tbPath, JSON.stringify(table));
+					return 'Data added';
+				}
+				return 'Duplicate entry';
+			}else if (!table['isUnique']){
+				value = JSON.stringify(value);
+				column.push(JSON.stringify(value));
+				fs.writeFileSync(tbPath, JSON.stringify(table));
+				return 'Data added';
+			}
 		}
-		fs.writeFileSync(this.dbPath, JSON.stringify(db));
-		return 'Value added';
+		return "Column doesn't exist.";
+	}
+
+	remove(tbName, columnName, value){
+		let tbPath = path.resolve(this.dbPath + '/' + tbName + '.txt');
+		let table = fs.readFileSync(tbPath).toString();
+		table = JSON.parse(table);
+		let column = table[columnName];
+		if(column){
+			value = JSON.stringify(value);
+			if (column.indexOf(value) !== -1){
+				column.splice(column.indexOf(value), 1);
+				fs.writeFileSync(tbPath, JSON.stringify(table));
+				return 'Data removed';
+			}
+			return 'Data not found';
+		}
+		return "Column doesn't exist.";
+	}
+
+	getValues(tbName, columnName, keys, condition = 'All'){
+		let tbPath = path.resolve(this.dbPath + '/' + tbName + '.txt');
+		let table = fs.readFileSync(tbPath).toString();
+		table = JSON.parse(table);
+		let column = table[columnName];
+		if(column){
+			if (condition === 'All'){
+				return column.map(value=>{
+					return JSON.parse(JSON.parse(value));
+				});
+			}else if(condition === 'byKeyName'){
+				keys = keys.split('.');
+				let values = column.map(value=>{
+					value = JSON.parse(JSON.parse(value));
+					let val = keys.reduce((obj, key)=>{
+						return obj[key]
+					},value)
+					return val;
+				})
+				return values;
+			}
+			return 'Data not found';
+		}
+		return "Column doesn't exist.";
 	}
 }

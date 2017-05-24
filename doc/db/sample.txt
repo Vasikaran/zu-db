@@ -1,1 +1,0 @@
-{"name":"sample","table1":{"__desc":"for sample","column1":["Vasi"]}}
