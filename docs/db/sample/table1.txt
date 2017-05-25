@@ -1,1 +1,1 @@
-{"__name":"table1","__desc":"for sample","column1":["\"{\\\"name\\\":\\\"Vasi\\\",\\\"age\\\":20}\""],"isUnique":false}
+{"__name":"table1","__desc":"for sample","__columns":[],"column1":{"column":[{"name":"Vasi","age":20,"kd":{"lan":["JS","Java"]}}],"isUnique":true},"column2":{"column":[{"name":"Vasi","age":20,"kd":{"lan":["JS","Java"]}}],"isUnique":true},"column3":{"column":[{"name":"Vasi","age":20,"kd":{"lan":["JS","Java"]}}],"isUnique":true}}
